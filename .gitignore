@@ -1,0 +1,24 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Uploads (пользовательские файлы, не идут в репо)
+uploads/
+
+# Prisma (migration_lock генерируется автоматически и не нужен в репо)
+prisma/migrations/migration_lock.toml
+
+# macOS
+.DS_Store
+
+# Логи
+*.log
+npm-debug.log*
+
+# Редакторы
+.vscode/
+.idea/

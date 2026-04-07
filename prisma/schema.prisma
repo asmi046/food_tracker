@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int             @id @default(autoincrement())
+  maxUserId         BigInt          @unique @map("max_user_id")
+  username          String?         @db.VarChar(255)
+  displayName       String          @map("display_name") @db.VarChar(255)
+  isBot             Boolean         @default(false) @map("is_bot")
+  lastActivityTime  BigInt?         @map("last_activity_time")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  
+  mealEntries       MealEntry[]
+  
+  @@map("users")
+}
+
+model MealEntry {
+  id                Int             @id @default(autoincrement())
+  userId            Int             @map("user_id")
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  imageId           String          @map("image_id") @db.VarChar(255)
+  imageOriginalPath String          @map("image_original_path") @db.VarChar(500)
+  imageCompressedPath String         @map("image_compressed_path") @db.VarChar(500)
+  imageSizeOriginal Int             @map("image_size_original")
+  imageSizeCompressed Int           @map("image_size_compressed")
+  
+  recognizedAt      DateTime?       @map("recognized_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  
+  nutrition         NutritionRecord?
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@map("meal_entries")
+}
+
+model NutritionRecord {
+  id                Int             @id @default(autoincrement())
+  mealEntryId       Int             @unique @map("meal_entry_id")
+  mealEntry         MealEntry       @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+  
+  productName       String          @map("product_name") @db.VarChar(500)
+  proteins          Decimal         @db.Decimal(8, 2) @map("proteins")
+  fats              Decimal         @db.Decimal(8, 2) @map("fats")
+  carbs             Decimal         @db.Decimal(8, 2) @map("carbs")
+  calories          Decimal         @db.Decimal(10, 2) @map("calories")
+  
+  aiProvider        String?         @map("ai_provider") @db.VarChar(50)
+  aiModel           String?         @map("ai_model") @db.VarChar(100)
+  aiRawResponse     String?         @map("ai_raw_response") @db.LongText
+  
+  createdAt         DateTime        @default(now()) @map("created_at")
+  
+  @@index([mealEntryId])
+  @@map("nutrition_records")
+}

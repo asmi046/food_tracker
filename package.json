@@ -1,0 +1,29 @@
+{
+  "name": "food_tracker",
+  "version": "1.0.0",
+  "description": "Бот для контроля питания",
+  "keywords": [
+    "food"
+  ],
+  "license": "ISC",
+  "author": "asmi",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "migrate": "prisma migrate dev",
+    "migrate:prod": "prisma migrate deploy",
+    "test:ai": "node scripts/testAI.js"
+  },
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.2.2",
+    "@prisma/client": "^5.9.1",
+    "dotenv": "^17.4.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prisma": "^5.9.1"
+  }
+}

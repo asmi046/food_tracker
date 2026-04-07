@@ -1,0 +1,6 @@
+{
+  "watch": ["."],
+  "ignore": ["uploads/", "node_modules/", "prisma/migrations/"],
+  "ext": "js,json",
+  "delay": 500
+}
