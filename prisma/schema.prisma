@@ -16,6 +16,8 @@ model User {
   username          String?         @db.VarChar(255)
   displayName       String          @map("display_name") @db.VarChar(255)
   isBot             Boolean         @default(false) @map("is_bot")
+  isVerified        Boolean         @default(false) @map("is_verified")
+  verifiedAt        DateTime?       @map("verified_at")
   lastActivityTime  BigInt?         @map("last_activity_time")
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")

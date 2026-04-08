@@ -46,18 +46,26 @@ bot.on('message_created', async (ctx) => {
         console.error('User registration error on message_created:', error);
     }
 
+    const user = await getUserFromContext(ctx, userRepository);
+    if (!user) {
+        await ctx.reply('Не удалось определить пользователя. Попробуй написать /start.');
+        return;
+    }
+
+    if (!userRepository.canUseBot(user)) {
+        await ctx.reply(
+            'Доступ к боту пока ограничен.\n' +
+            'Твой аккаунт создан и ожидает верификации администратором.'
+        );
+        return;
+    }
+
     const text = ctx?.message?.body?.text;
     const imageAttachment = imageStorage.getImageAttachment(ctx?.message);
 
     if (imageAttachment) {
         await ctx.reply('Фото получено, анализирую...');
         try {
-            const user = await getUserFromContext(ctx, userRepository);
-            if (!user) {
-                await ctx.reply('Не удалось определить пользователя. Попробуй написать /start.');
-                return;
-            }
-
             const { nutrition } = await processFoodPhoto.execute({
                 attachment: imageAttachment,
                 user,
