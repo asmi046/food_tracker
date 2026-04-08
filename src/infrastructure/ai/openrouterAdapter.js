@@ -1,6 +1,6 @@
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-// Системный промпт: просим модель вернуть строго JSON с БЖУ
+// Системный промпт: просим модель вернуть строго JSON с БЖУ/ккал для всей порции на фото
 const SYSTEM_PROMPT = `You are a food nutrition analyst.
 When given an image of a food product, analyze it and respond ONLY with a valid JSON object.
 Do not include any text before or after the JSON.
@@ -17,7 +17,8 @@ Required JSON format:
 }
 
 Rules:
-- All numeric values are per 100g of product
+- All numeric values (proteins, fats, carbs, calories) must be for the FULL visible portion on the plate
+- portionGrams is estimated total weight of the visible portion in grams
 - Use decimal numbers (e.g. 12.5, not 12)
 - productName must be in Russian
 - If you cannot identify the food, set confidence to "low" and use 0 for all values
@@ -89,7 +90,7 @@ function createOpenrouterAdapter({ apiKey, model }) {
                         },
                         {
                             type: 'text',
-                            text: 'Определи продукт на фото и верни его БЖУ в JSON формате.',
+                            text: 'Определи блюдо на фото и верни БЖУ/ккал для всей порции на тарелке в JSON формате.',
                         },
                     ],
                 },

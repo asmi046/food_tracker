@@ -67,11 +67,12 @@ bot.on('message_created', async (ctx) => {
 
             await ctx.reply(
                 `🍽 ${nutrition.productName}\n\n` +
+                `Оценка порции: ${nutrition.portionGrams} г\n\n` +
                 `Белки:    ${nutrition.proteins} г\n` +
                 `Жиры:     ${nutrition.fats} г\n` +
                 `Углеводы: ${nutrition.carbs} г\n` +
                 `Калории:  ${nutrition.calories} ккал\n\n` +
-                `(на 100 г продукта)`
+                `(для всей порции на фото)`
             );
             return;
         } catch (error) {

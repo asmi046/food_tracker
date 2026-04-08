@@ -100,11 +100,11 @@ async function run() {
 
     console.log('=== Результат распознавания ===');
     console.log(`Продукт:   ${result.productName}`);
+    console.log(`Порция:    ${result.portionGrams} г`);
     console.log(`Белки:     ${result.proteins} г`);
     console.log(`Жиры:      ${result.fats} г`);
     console.log(`Углеводы:  ${result.carbs} г`);
     console.log(`Калории:   ${result.calories} ккал`);
-    console.log(`Порция:    ${result.portionGrams} г`);
     console.log(`Уверенность: ${result.confidence}`);
     console.log(`\nВремя ответа: ${elapsed} мс`);
     console.log('\nСырой ответ AI:');
