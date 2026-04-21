@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Bot } = require('@maxhub/max-bot-api');
+const { Bot, Keyboard } = require('@maxhub/max-bot-api');
 const path = require('path');
 const { createImageStorage } = require('./src/services/imageStorage');
 const { getPrismaClient } = require('./src/db/pool');
@@ -29,6 +29,94 @@ const processFoodPhoto = createProcessFoodPhotoService({
     nutritionRepository,
 });
 
+const REPORT_DAY_PAYLOAD = 'report_day';
+const REPORT_WEEK_PAYLOAD = 'report_week';
+
+function getReportKeyboard() {
+    return [
+        Keyboard.inlineKeyboard([
+            [
+                Keyboard.button.callback('Отчет за день', REPORT_DAY_PAYLOAD),
+                Keyboard.button.callback('Отчет за неделю', REPORT_WEEK_PAYLOAD),
+            ],
+        ]),
+    ];
+}
+
+function toNumber(value) {
+    return Number(value || 0);
+}
+
+function formatReport(entries, title) {
+    const withNutrition = entries.filter((entry) => entry.nutrition);
+
+    if (withNutrition.length === 0) {
+        return `${title}\n\nНет данных по приемам пищи за этот период.`;
+    }
+
+    const totals = withNutrition.reduce(
+        (acc, entry) => {
+            acc.proteins += toNumber(entry.nutrition.proteins);
+            acc.fats += toNumber(entry.nutrition.fats);
+            acc.carbs += toNumber(entry.nutrition.carbs);
+            acc.calories += toNumber(entry.nutrition.calories);
+            return acc;
+        },
+        { proteins: 0, fats: 0, carbs: 0, calories: 0 }
+    );
+
+    return (
+        `${title}\n\n` +
+        `Приемов пищи: ${withNutrition.length}\n` +
+        `Белки: ${totals.proteins.toFixed(1)} г\n` +
+        `Жиры: ${totals.fats.toFixed(1)} г\n` +
+        `Углеводы: ${totals.carbs.toFixed(1)} г\n` +
+        `Калории: ${totals.calories.toFixed(1)} ккал`
+    );
+}
+
+async function getAuthorizedUserFromContext(ctx) {
+    const user = await getUserFromContext(ctx, userRepository);
+    if (!user) {
+        await ctx.reply('Не удалось определить пользователя. Попробуй написать /start.');
+        return null;
+    }
+
+    if (!userRepository.canUseBot(user)) {
+        await ctx.reply(
+            'Доступ к боту пока ограничен.\n' +
+            'Твой аккаунт создан и ожидает верификации администратором.'
+        );
+        return null;
+    }
+
+    return user;
+}
+
+async function sendDailyReport(ctx, user) {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    const entries = await mealEntryRepository.findWithNutritionByRange(user.id, start, end);
+    await ctx.reply(formatReport(entries, 'Отчет за день'));
+}
+
+async function sendWeeklyReport(ctx, user) {
+    const now = new Date();
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    const start = new Date(now);
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+
+    const entries = await mealEntryRepository.findWithNutritionByRange(user.id, start, end);
+    await ctx.reply(formatReport(entries, 'Отчет за 7 дней'));
+}
+
 bot.on('bot_started', async (ctx) => {
     try {
         await registerUserFromContext(ctx, userRepository);
@@ -36,7 +124,10 @@ bot.on('bot_started', async (ctx) => {
         console.error('User registration error on bot_started:', error);
     }
 
-    ctx.reply('Я определяю калорийность и БЖУ продуктов по фото. Если твой аккаунт активирован, просто пришли фото еды, и я скажу, что на ней и сколько это стоит калорий и БЖУ. Если аккаунт не активирован, он будет создан и ожидает верификации администратором.');
+    ctx.reply(
+        'Я определяю калорийность и БЖУ продуктов по фото. Если твой аккаунт активирован, просто пришли фото еды, и я скажу, что на ней и сколько это стоит калорий и БЖУ. Если аккаунт не активирован, он будет создан и ожидает верификации администратором.',
+        { attachments: getReportKeyboard() }
+    );
 });
 
 bot.on('message_created', async (ctx) => {
@@ -46,22 +137,21 @@ bot.on('message_created', async (ctx) => {
         console.error('User registration error on message_created:', error);
     }
 
-    const user = await getUserFromContext(ctx, userRepository);
-    if (!user) {
-        await ctx.reply('Не удалось определить пользователя. Попробуй написать /start.');
-        return;
-    }
-
-    if (!userRepository.canUseBot(user)) {
-        await ctx.reply(
-            'Доступ к боту пока ограничен.\n' +
-            'Твой аккаунт создан и ожидает верификации администратором.'
-        );
-        return;
-    }
+    const user = await getAuthorizedUserFromContext(ctx);
+    if (!user) return;
 
     const text = ctx?.message?.body?.text;
     const imageAttachment = imageStorage.getImageAttachment(ctx?.message);
+
+    if (text === '/report_day' || text === 'Отчет за день') {
+        await sendDailyReport(ctx, user);
+        return;
+    }
+
+    if (text === '/report_week' || text === 'Отчет за неделю') {
+        await sendWeeklyReport(ctx, user);
+        return;
+    }
 
     if (imageAttachment) {
         await ctx.reply('Фото получено, анализирую...');
@@ -91,7 +181,41 @@ bot.on('message_created', async (ctx) => {
         }
     }
 
-    await ctx.reply('Пришлите фото продукта, и я определю его калорийность и БЖУ.');
+    await ctx.reply('Пришлите фото продукта, и я определю его калорийность и БЖУ.', {
+        attachments: getReportKeyboard(),
+    });
+});
+
+bot.action(REPORT_DAY_PAYLOAD, async (ctx) => {
+    try {
+        const user = await getAuthorizedUserFromContext(ctx);
+        if (!user) {
+            await ctx.answerOnCallback({ notification: 'Нет доступа' });
+            return;
+        }
+
+        await sendDailyReport(ctx, user);
+        await ctx.answerOnCallback({ notification: 'Отчет за день готов' });
+    } catch (error) {
+        console.error('Daily report callback error:', error);
+        await ctx.answerOnCallback({ notification: 'Не удалось собрать отчет' });
+    }
+});
+
+bot.action(REPORT_WEEK_PAYLOAD, async (ctx) => {
+    try {
+        const user = await getAuthorizedUserFromContext(ctx);
+        if (!user) {
+            await ctx.answerOnCallback({ notification: 'Нет доступа' });
+            return;
+        }
+
+        await sendWeeklyReport(ctx, user);
+        await ctx.answerOnCallback({ notification: 'Отчет за неделю готов' });
+    } catch (error) {
+        console.error('Weekly report callback error:', error);
+        await ctx.answerOnCallback({ notification: 'Не удалось собрать отчет' });
+    }
 });
 
 bot.catch((err) => {

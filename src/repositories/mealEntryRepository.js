@@ -36,6 +36,24 @@ function createMealEntryRepository(prisma) {
         });
     }
 
+    async function findWithNutritionByRange(userId, startDate, endDate) {
+        return prisma.mealEntry.findMany({
+            where: {
+                userId,
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            include: {
+                nutrition: true,
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+    }
+
     async function markRecognized(mealEntryId) {
         return prisma.mealEntry.update({
             where: { id: mealEntryId },
@@ -56,6 +74,7 @@ function createMealEntryRepository(prisma) {
         createWithImageData,
         markRecognized,
         findWithNutritionByDate,
+        findWithNutritionByRange,
         findLatestByUser,
     };
 }
