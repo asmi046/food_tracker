@@ -14,7 +14,8 @@
     "start": "node index.js",
     "migrate": "prisma migrate dev",
     "migrate:prod": "prisma migrate deploy",
-    "test:ai": "node scripts/testAI.js"
+    "test:ai": "node scripts/testAI.js",
+    "deploy:remote": "bash -lc ': \"${DEPLOY_USER:?Set DEPLOY_USER}\"; : \"${DEPLOY_HOST:?Set DEPLOY_HOST}\"; : \"${DEPLOY_PATH:?Set DEPLOY_PATH}\"; ssh \"$DEPLOY_USER@$DEPLOY_HOST\" \"cd $DEPLOY_PATH && ./deploy.sh ${DEPLOY_BRANCH:-main}\"'"
   },
   "dependencies": {
     "@maxhub/max-bot-api": "^0.2.2",

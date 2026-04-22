@@ -43,6 +43,22 @@ function getReportKeyboard() {
     ];
 }
 
+async function setBotCommands() {
+    await bot.api.setMyCommands([
+        { name: 'start', description: 'Запустить бота и показать меню' },
+        { name: 'menu', description: 'Показать кнопки действий' },
+        { name: 'report_day', description: 'Отчет за текущий день' },
+        { name: 'report_week', description: 'Отчет за последние 7 дней' },
+    ]);
+}
+
+async function sendMainMenu(ctx) {
+    await ctx.reply(
+        'Я определяю калорийность и БЖУ продуктов по фото. Если твой аккаунт активирован, просто пришли фото еды, и я скажу результат. Если аккаунт не активирован, он будет создан и ожидает верификации администратором.',
+        { attachments: getReportKeyboard() }
+    );
+}
+
 function toNumber(value) {
     return Number(value || 0);
 }
@@ -124,10 +140,35 @@ bot.on('bot_started', async (ctx) => {
         console.error('User registration error on bot_started:', error);
     }
 
-    ctx.reply(
-        'Я определяю калорийность и БЖУ продуктов по фото. Если твой аккаунт активирован, просто пришли фото еды, и я скажу, что на ней и сколько это стоит калорий и БЖУ. Если аккаунт не активирован, он будет создан и ожидает верификации администратором.',
-        { attachments: getReportKeyboard() }
-    );
+    await sendMainMenu(ctx);
+});
+
+bot.command('start', async (ctx) => {
+    try {
+        await registerUserFromContext(ctx, userRepository);
+    } catch (error) {
+        console.error('User registration error on /start:', error);
+    }
+
+    await sendMainMenu(ctx);
+});
+
+bot.command('menu', async (ctx) => {
+    const user = await getAuthorizedUserFromContext(ctx);
+    if (!user) return;
+    await sendMainMenu(ctx);
+});
+
+bot.command('report_day', async (ctx) => {
+    const user = await getAuthorizedUserFromContext(ctx);
+    if (!user) return;
+    await sendDailyReport(ctx, user);
+});
+
+bot.command('report_week', async (ctx) => {
+    const user = await getAuthorizedUserFromContext(ctx);
+    if (!user) return;
+    await sendWeeklyReport(ctx, user);
 });
 
 bot.on('message_created', async (ctx) => {
@@ -225,6 +266,7 @@ bot.catch((err) => {
 
 imageStorage.ensureStorage()
     .then(async () => {
+        await setBotCommands();
         bot.start();
         console.log('Bot started with Prisma');
     })
