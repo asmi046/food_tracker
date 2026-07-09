@@ -29,6 +29,14 @@ npx prisma generate
 echo "[deploy] applying migrations"
 npx prisma migrate deploy
 
+CA_CERT_PATH="$ROOT_DIR/cert/russiantrustedca.pem"
+if [[ -f "$CA_CERT_PATH" ]]; then
+  export NODE_EXTRA_CA_CERTS="$CA_CERT_PATH"
+  echo "[deploy] NODE_EXTRA_CA_CERTS set to $CA_CERT_PATH"
+else
+  echo "[deploy] warning: CA cert not found at $CA_CERT_PATH; continuing without NODE_EXTRA_CA_CERTS"
+fi
+
 if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
   echo "[deploy] restarting PM2 process $APP_NAME"
   pm2 restart "$APP_NAME" --update-env
