@@ -18,7 +18,7 @@
     "deploy:remote": "bash -lc ': \"${DEPLOY_USER:?Set DEPLOY_USER}\"; : \"${DEPLOY_HOST:?Set DEPLOY_HOST}\"; : \"${DEPLOY_PATH:?Set DEPLOY_PATH}\"; ssh \"$DEPLOY_USER@$DEPLOY_HOST\" \"cd $DEPLOY_PATH && ./deploy.sh ${DEPLOY_BRANCH:-main}\"'"
   },
   "dependencies": {
-    "@maxhub/max-bot-api": "^0.2.2",
+    "@maxhub/max-bot-api": "^0.2.5",
     "@prisma/client": "^5.9.1",
     "dotenv": "^17.4.0",
     "sharp": "^0.34.5"
